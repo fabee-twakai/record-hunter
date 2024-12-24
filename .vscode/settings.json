@@ -3,5 +3,8 @@
     "**/node_modules": true,
     "**/bower_components": true,
     "**/.sfdx": true
-  }
+  },
+  "editor.formatOnSave": true,
+  "prettier.requireConfig": true,
+"editor.defaultFormatter": "esbenp.prettier-vscode"
 }
