@@ -1,3 +1,10 @@
+/**
+ * @description       :
+ * @author            : Godzilla-Man
+ * @group             :
+ * @last modified on  : 12-24-2024
+ * @last modified by  : Takashi Wakai
+ **/
 public with sharing class FilterDataService extends DataService {
   public class InputInfo {
     @AuraEnabled
@@ -114,7 +121,8 @@ public with sharing class FilterDataService extends DataService {
     String objectApiName,
     String fieldApiNames,
     String formDataJson,
-    String customLogic
+    String customLogic,
+    String customSql
   ) {
     String conditions = getConditions(
       objectApiName,
@@ -123,8 +131,13 @@ public with sharing class FilterDataService extends DataService {
       customLogic
     );
     String query = 'SELECT Id FROM ' + objectApiName;
-    if (String.isNotBlank(conditions)) {
+    if (String.isNotBlank(conditions) && String.isNotBlank(customSql)) {
       query += ' WHERE ' + conditions;
+      query += ' AND ' + customSql;
+    } else if (String.isNotBlank(conditions) && String.isBlank(customSql)) {
+      query += ' WHERE ' + conditions;
+    } else if (String.isBlank(conditions) && String.isNotBlank(customSql)) {
+      query += ' WHERE ' + customSql;
     }
     List<Id> recordIds = performQuery(query);
 
@@ -302,17 +315,7 @@ public with sharing class FilterDataService extends DataService {
 
     switch on type {
       when 'STRING', 'EMAIL', 'URL', 'PHONE', 'TEXTAREA' {
-        if (value.contains('*')) {
-          whereCondition =
-            fieldName +
-            ' LIKE \'' +
-            (value.startsWith('*') ? '%' : '') +
-            value.removeStart('*').removeEnd('*') +
-            (value.endsWith('*') ? '%' : '') +
-            '\'';
-        } else {
-          whereCondition = fieldName + ' = \'' + value + '\'';
-        }
+        whereCondition = fieldName + ' LIKE \'%' + value + '%\'';
       }
       when 'PERCENT', 'CURRENCY', 'DOUBLE' {
         if (String.isNotBlank(minValue)) {
@@ -353,6 +356,7 @@ public with sharing class FilterDataService extends DataService {
           ? ' AND '
           : '';
         if (String.isNotBlank(maxValue)) {
+          System.debug(maxValue);
           Time toTime = (Time) JSON.deserialize(
             '"' + maxValue + '"',
             Time.class
